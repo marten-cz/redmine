@@ -18,6 +18,7 @@
 class MailHandler < ActionMailer::Base
   include ActionView::Helpers::SanitizeHelper
   include Redmine::I18n
+  include Redmine::Hook::Helper
 
   class UnauthorizedAction < StandardError; end
   class MissingInformation < StandardError; end
@@ -218,8 +219,10 @@ class MailHandler < ActionMailer::Base
 
     # add To and Cc as watchers before saving so the watchers can reply to Redmine
     add_watchers(issue)
+    call_hook(:controller_issues_new_before_save, { :issue => issue })
     issue.save!
     add_attachments(issue)
+    call_hook(:controller_issues_new_after_save, { :issue => issue })
     logger.info "MailHandler: issue ##{issue.id} created by #{user}" if logger
     issue
   end
@@ -251,7 +254,9 @@ class MailHandler < ActionMailer::Base
     # add To and Cc as watchers before saving so the watchers can reply to Redmine
     add_watchers(issue)
     add_attachments(issue)
+    call_hook(:controller_issues_edit_before_save, { :issue => issue, :journal => journal})
     issue.save!
+    call_hook(:controller_issues_edit_after_save, { :issue => issue, :journal => journal})
     if logger
       logger.info "MailHandler: issue ##{issue.id} updated by #{user}"
     end
